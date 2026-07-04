@@ -176,3 +176,6 @@ cython_debug/
 data/*
 !data/README.md
 fort.99
+
+*.synctex.gz
+*.bbl

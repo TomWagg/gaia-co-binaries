@@ -1,0 +1,285 @@
+\PassOptionsToPackage{dvipsnames}{xcolor}
+\PassOptionsToPackage{oneside}{geometry}
+\documentclass[twocolumn]{aastex701}
+\received{\today}
+\shorttitle{}
+\shortauthors{Authors}
+\graphicspath{{figures/}}
+
+\usepackage{lipsum}
+\usepackage{physics}
+\usepackage{multirow, makecell}
+\usepackage{xspace}
+\usepackage{natbib}
+\usepackage{fontawesome5}
+\usepackage{wrapfig}
+\usepackage[figuresright]{rotating}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{siunitx}
+
+% remove indents in footnotes
+\usepackage[hang,flushmargin]{footmisc}
+
+\usepackage{styles/todo_notes}
+\usepackage{styles/abbreviations}
+
+\newcommand{\placeholder}[1]{{\color{gray} \lipsum[#1]}}
+\newcommand{\introParaHdr}[1]{{\color{gray}[\textit{#1}]}}
+
+% custom function for adding units
+\makeatletter
+\renewcommand{\unit}[1]{%
+    \,\mathrm{#1}\checknextarg}
+\newcommand{\checknextarg}{\@ifnextchar\bgroup{\gobblenextarg}{}}
+\newcommand{\gobblenextarg}[1]{\,\mathrm{#1}\@ifnextchar\bgroup{\gobblenextarg}{}}
+\makeatother
+
+% shorthands
+
+
+\newif\ifstartedinmathmode
+\newcommand{\msun}{%
+  \relax\ifmmode\startedinmathmodetrue\else\startedinmathmodefalse\fi
+  {\ifstartedinmathmode\unit{M_{\odot}}\else$\unit{M_{\odot}}$\fi}\xspace%
+}
+
+\newif\ifstartedinmathmode
+\newcommand{\rsun}{%
+  \relax\ifmmode\startedinmathmodetrue\else\startedinmathmodefalse\fi
+  {\ifstartedinmathmode\unit{R_{\odot}}\else$\unit{R_{\odot}}$\fi}\xspace%
+}
+
+\newcommand{\insertNumber}{{\color{red} XXX}}
+\newenvironment{conclusions}{\begin{enumerate}}{\end{enumerate}}
+\newcommand{\conclusion}[2]{\item \textbf{#1}\\#2}
+
+\newcommand{\bhs}{BH-star\xspace}
+\newcommand{\bhss}{BH-stars\xspace}
+\newcommand{\bhsb}{BH-star binaries\xspace}
+\newcommand{\avg}[1]{\langle #1 \rangle}
+
+\begin{document}
+
+% \darkmode{}
+
+\title{Forecasts for the \gaia DR4 BH revolution}
+
+% affiliations
+\newcommand{\cca}{\affiliation{Center for Computational Astrophysics, Flatiron Institute, 162 Fifth Ave, New York, NY, 10010, USA}}
+\newcommand{\cmu}{\affiliation{McWilliams Center for Cosmology and Astrophysics, Department of Physics, Carnegie Mellon University, Pittsburgh, PA 15213, USA}}
+\newcommand{\arizona}{\affiliation{University of Arizona, Department of Astronomy \& Steward Observatory, 933 N. Cherry Ave., Tucson, AZ 85721, USA}}
+\newcommand{\UW}{\affiliation{Department of Astronomy, University of Washington, Seattle, WA, 98195}}
+
+\author{Authors}
+\email{science@person.com}
+\cca
+
+\begin{abstract}
+    
+\end{abstract}
+
+\keywords{}
+
+% {\hypersetup{linkcolor=black}\listoftodos}
+
+% \tableofcontents{}
+
+% \clearpage
+
+\section{Simulating the Gaia detectable population of BH-star binaries}
+
+Overall, to make a prediction for the detectable population of \bhsb, we aim to simulate the intrinsic population, with their present day properties:
+
+\begin{equation}
+    \theta = \{ m_{\rm BH}, m_{\rm comp}, M_{G, {\rm comp}}, e, P, \vec{x}, \vec{v} \},
+\end{equation}
+where $m_{\rm BH}$ is the mass of the black hole, $m_{\rm comp}$ is the mass of the companion star, $M_{G, {\rm comp}}$ is the Gaia G-band absolute magnitude of the companion star, $e$ is the orbital eccentricity, $P$ is the orbital period, and $\vec{x}$ and $\vec{v}$ are the position and velocity of the binary in the Milky Way. We will separately sample random orientations and inclinations.
+
+As we describe below, we use \cosmic to generate the intrinsic properties of the binaries, and \cogsworth to compute their Gaia G-band magnitudes, positions, and velocities.
+
+\subsection{Creating a sample of BH-stars from which to draw}
+
+\bhsb are intrinsically rare in the Milky Way. We expect that there are around 170,000 present in the Milky Way. Given that there's around $\num{6e10}$ of stellar mass in the Milky Way, that implies a flat Monte Carlo sample would require one to evolve about 300,000 stellar masses of binaries to get each individual \bhs. It's worth considering the reasons for the rarity of \bhsb, because it informs how we should sample them.
+
+\bhsb with low-mass stars (BH-LMS) are rare because they actually \textit{form rarely}. They require extreme mass ratios (for example, a $30 \msun$ BH progenitor with a $1 \msun$ companion), which are rare when assuming a flat prior on mass ratio. These binaries still often fail to produce bound \bhs systems. A tight initial binary will undergo mass transfer when the primary star fills its Roche lobe, which is almost inevitably unstable given the mass ratio of the system. These common-envelope events often fail and merge due to a failed common-envelope. Alternatively, if the binary is wide enough to avoid mass transfer, any supernova kick imparted by the BH is often enough to unbind the system.
+
+\bhsb with high-mass stars (BH-HMS), on the other hand, are rare because they \textit{die quickly}. Although it is common for a high-mass binary to have a stage in which it is a bound BH and a massive star, this is short lived because of the rapid evolution of the stellar companion. As a result, these systems must form recently in the history of the Galaxy in order to be observed today.
+
+Given the different reasoning for their rarity, we apply two different sampling strategies. For the BH-HMSs, creating an intrinsic population can be achieved through simple Monte Carlo draws from the initial distributions.For BH-LMSs, a more complex approach is required. We employ the \stroop adaptive importance sampling algorithm \citep{STROOPWAFEL} to sample only systems that are likely to form our targets. We note that separating these populations is essential, otherwise the adaptive sampling produces negligible gains and just finds BH-HMSs.
+
+We apply the subsequent analysis to each of these populations separately, and then combine the results at the end, normalising for their relative rates.
+
+\question{Is this there a more clever way to combine these consistently?}
+
+For the \stroop sampling we assume the following priors for the initial distributions of the binaries:
+\begin{itemize}
+    \item Primary mass, $m_1$, drawn from a Kroupa IMF \citep{Kroupa+2001:2001MNRAS.322..231K} between $5 \msun$ and $150 \msun$
+    \item Mass ratio, $q = m_2 / m_1$, drawn from a flat distribution between $0$ and $1$ \citep{Mazeh+1992:1992ApJ...401..265M}
+    \item Orbital period, $P$, drawn from a power-law distribution with $p(P) \propto (\log_{10}(P / \rm days))^{-0.55} \in [0.15, 5.5]$ \citep{Sana+2012:2012Sci...337..444S}
+    \item Eccentricity, $e$, drawn from a power-law distribution with $p(e) \propto e^{-0.45} \in [0, 0.9]$ \citep{Sana+2012:2012Sci...337..444S}
+\end{itemize}
+
+We use these priors to sample populations of BH-LMSs for each metallicity bin that we have a \texttt{MESA} grid for. We then evolve these binaries with \cosmicm. This gives us the formation properties of the binaries in a given metallicity bin
+
+\begin{equation}
+    \theta_{b, Z} = \{ m_{\rm BH}, P_{i}, m_{{\rm comp}, i}, e_i, t_{\rm start}, t_{\rm end} \},
+\end{equation}
+where $P_i$, $m_{{\rm comp}, i}$, and $e_i$ are the initial orbital period, companion mass, and eccentricity of the binary at the formation of the \bhsb. $t_{\rm start}$ is the time at which the system starts its BH-star phase, and $t_{\rm end}$ is the time at which it ends. The end time is defined as when the companion star evolves into a white dwarf, neutron star, or the maximum simulation time is reached (13.7 Gyr). 
+
+\subsection{Populating the Milky Way}
+
+We next populate a Milky Way our synthetic \bhss, since the synthetic binaries are uniformly sampled across metallicity bins, which is not representative of the Milky Way. We use the \citet{Sanders+2015:2015MNRAS.449.3479S} model for the Milky Way, which includes distributions for the lookback time, positions, velocities. We combine this model with \citet{Frankel+2018}, which provides a relation between birth time, position, and metallicity. These models account for radial migration and the inside-out growth of the galaxy, whilst maintaining a steady-state distribution of Galactic orbits. With these models, we draw $N_g = \insertNumber$\footnote{Large number here. This will need to be chosen to get a representative sample, depends on detectability I suppose.} individual points from the galaxy to get
+
+\begin{equation}
+    \theta_{g} = \{ \tau, \vec{x}_i, \vec{v}_i, Z_g \},
+\end{equation}
+where $\tau$ is the lookback time, $\vec{x}_i$ and $\vec{v}_i$ are the position and velocity of the binary in the Milky Way, and $Z_g$ is the metallicity that we will match to the binary metallicity bins.
+
+For each of these points, we draw a binary from our synthetic populations (the Monte Carlo sample for BH-HMSs and the \stroop sample for BH-LMSs). We choose the metallicity bin closest to $Z_g$ and draw a binary randomly. In the BH-LMS case this random draw is weighted by the binaries' adaptive importance sampling weights.
+
+\subsection{Identifying the detectable population}
+
+We now have a population of binaries with their formation properties. Next we need to identify which of these binaries would still be in their BH-star phase at present day and observable by \gaia. First, we determine whether each binary is still in its \bhs phase, based on the drawn lookback time $\tau$ and and its lifetime. We keep any binaries that are in their \bhs phase, meaning that they meet the following condition:
+
+\begin{equation}
+    t_{\rm start} < \tau < t_{\rm end} \implies \text{still in BH-star phase}
+\end{equation}
+
+For these binaries, we compute their present-day properties, which may differ significantly from their formation properties as a result of the evolution of the companion star. \emph{This could be handled three different ways as far as I can see. (1) We \textit{could} just re-evolve each of the BH-star systems (starting from the BH-star formation row in the bpp) and directly compute the value (CPU-hour intensive), (2) when doing the original \stroop run we could store \underline{a lot} of bcm rows and interpolate between them as necessary (memory-intensive), (3) given we have the \texttt{MESA} grid, and \gaia is likely insensitive to binaries that are close enough for mass transfer, we could just use the \texttt{MESA} grid to get the present-day properties of the companion star (too many assumptions?).}
+
+\question{What should we do about getting the BH-star present-day state?}
+
+With this information, we can integrate the Galactic orbits of the binaries to get their present-day positions and velocities with \cogsworth. We also use \cogsworth to calculate the Gaia G-band absolute magnitude of the companion star, $M_{G, {\rm comp}}$. We then draw random orientations, $\omega$, and inclinations, $\iota$, for each binary. At this point we have the full set of present-day properties for each binary, $\theta$.
+
+Using these parameters, we apply \texttt{GaiaMock} \citep{El-Badry+2024:2024OJAp....7E.100E} to get a representative sample of the detectable \gaia population.
+
+\subsection{Normalising to the Milky Way rate}
+
+Finally, we must normalise our sample to the Milky Way. We have a sample of $N_g$ binaries drawn from the Milky Way, but this is not representative of the actual number of \bhss in the Milky Way. Given how many intrinsic systems we would create per star forming mass, we can scale by the stellar mass of the Milky Way. This additionally allows us to consistently combine the BH-HMS and BH-LMS populations, which are sampled differently.
+
+For the Monte Carlo sample of BH-HMSs, we can use the outputs of \cosmic (\texttt{mass\_singles} and \texttt{mass\_binaries}) to get the total mass of stars that we would need to evolve to get our sample of BH-HMSs. 
+
+For the \stroop sample of BH-LMSs we need to consider the fact that we have not sampled the full initial distributions for our adaptive importance sampling. For this purpose we can define $f_{\rm sample}$, which is the fraction the full parameter space that we sampled, which can be simply defined as
+\begin{equation}\label{eq:f_sample}
+    f_{\rm sample} = \frac{\avg{M_{\rm sample}}}{\avg{M_{\rm full}}},
+\end{equation}
+where $\avg{M_{\rm sample}}$ is the average mass of the binaries that we sampled, and $\avg{M_{\rm full}}$ is the average mass of the binaries that we would have sampled if we had drawn from the full initial distributions. We fully sampled orbital period, and eccentricity distributions. However, we didn't sample single stars, we only sampled binaries with primary masses above $m_{1, \rm min}$ (where $m_{1, \rm min} = 5 \msun$), and rejected systems with $m_2 < m_{2, \rm min}$ (where $m_{2, \rm min} = 0.08 \msun$). In Appendix~\ref{app:f_sample} we show how to analytically compute $f_{\rm sample}$, which is $\sim \insertNumber$ for our chosen parameters.
+
+
+
+\section{Variations}
+
+We're going to vary the initial mass ratio distribution and the natal kick prescription for black holes. Also potentially some of the remnant mass prescriptions (MM20).
+
+\begin{acknowledgements}
+    
+\end{acknowledgements}
+
+\software{}
+
+\bibliographystyle{aasjournal}
+\bibliography{bibs/paper, bibs/software}{}
+
+\restartappendixnumbering
+
+\allowdisplaybreaks
+
+\appendix{}
+
+\section{Calculating the fraction of the initial distributions sampled in our simulations}
+\label{app:f_sample}
+
+In this Section we derive the fraction of the initial distributions that were sampled in our \stroop simulations of \bhsb, $f_{\rm sample}$. As we note in Eq.~\ref{eq:f_sample}, this is the ratio of the average mass of the binaries that we sampled to the average mass of the binaries that we would have sampled if we had drawn from the full initial distributions.
+
+We derive these average total masses using conditional probabilities. We assume primary masses are sampled from an initial mass function (IMF) $\zeta(m)$, in which a mass-dependent fraction $f_{\rm bin}(m_1)$ of primaries host a companion. Companions are assigned a uniform mass ratio $q \sim \mathcal{U}(0,1)$ with $m_2 = m_1 q$, and any binary with $m_2 < m_2^{\rm min}$ is rejected. We consider the two scenarios separately: (1) the sample population, and (2) the full population of singles and binaries.
+
+\subsection{Conditional expectation of the mass ratio}
+
+At fixed primary mass $m_1$, the rejection $m_2 = m_1 q > m_2^{\rm min}$ is equivalent to conditioning $q \sim \mathcal{U}(0,1)$ on $q > a$, where we define
+\begin{equation}
+  a \equiv \frac{m_2^{\rm min}}{m_1}.
+\end{equation}
+A uniform distribution conditioned on $q > a$ is simply $\mathcal{U}(a,1)$, whose mean is
+\begin{equation}
+  \mathbb{E}[q \mid m_1,\ \text{surviving}] = \frac{1+a}{2}.
+  \label{eq:Eq}
+\end{equation}
+The probability that a binary with primary $m_1$ is deemed valid is the width of the surviving interval,
+\begin{equation}
+  P_{\rm valid, bin}(m_1) = 1 - a = 1 - \frac{m_2^{\rm min}}{m_1}.
+  \label{eq:Psurv}
+\end{equation}
+Hence the expected total mass of a \emph{valid} binary at fixed $m_1$ is
+\begin{equation}
+  \mathbb{E}[m_1 + m_2 \mid m_1] = m_1\left(1 + \frac{1+a}{2}\right)
+  = \frac{3m_1 + m_2^{\rm min}}{2}.
+  \label{eq:binmass}
+\end{equation}
+
+\subsection{Scenario 1: BH-star sample population}
+\label{app:scenario1}
+
+Here we retain only binaries and impose $m_1 > m_1^{\rm min}$. Because we draw $q$ once and discard failures, the `valid' sample is skew by the validity probability~\eqref{eq:Psurv}: a primary of mass $m_1$ enters the kept sample with weight $\zeta(m_1) f_{\rm bin}(m_1) P_{\rm valid, bin}(m_1)$.
+
+The average total mass per surviving binary is the conditional expectation
+\begin{equation}
+  \avg{M_{\rm sample}}
+  = \frac{\displaystyle\int \zeta f_{\rm bin}\, P_{\rm valid, bin}\,
+      \mathbb{E}[m_1+m_2\mid m_1]\,\mathrm{d}m_1}
+         {\displaystyle\int \zeta f_{\rm bin}\, P_{\rm valid, bin}\,\mathrm{d}m_1}.
+\end{equation}
+Substituting~\eqref{eq:Psurv} and~\eqref{eq:binmass}, we find
+\begin{equation}
+  \avg{M_{\rm sample}}
+  = \frac{\displaystyle\int_{m_1^{\rm min}}^{m_1^{\rm max}}
+      \zeta(m_1)\,f_{\rm bin}(m_1)
+      \left(\frac{3}{2}m_1 - m_2^{\rm min}
+            - \frac{(m_2^{\rm min})^2}{2 m_1}\right)\mathrm{d}m_1}
+         {\displaystyle\int_{m_1^{\rm min}}^{m_1^{\rm max}}
+      \zeta(m_1)\,f_{\rm bin}(m_1)
+      \left(1 - \frac{m_2^{\rm min}}{m_1}\right)\mathrm{d}m_1}
+  \label{eq:scenario1}
+\end{equation}
+The three terms in the numerator are immediately interpretable: $\tfrac{3}{2}m_1$ is the mean total mass for an unconstrained uniform-$q$ binary (since $\langle q \rangle = \tfrac12$), while the remaining terms subtract the contribution of the truncated low-$q$ tail. Note that a \emph{constant} $f_{\rm bin}$ cancels between numerator and denominator; the binary fraction survives in~\eqref{eq:scenario1} only because it is mass-dependent and thereby reshapes the primary-mass distribution of the binary subpopulation. Similarly, setting $m_2^{\rm min} \to 0$ recovers the unconstrained mean $\langle M_{\rm sample} \rangle = \int \zeta f_{\rm bin}\,(3/2)m_1\,\mathrm{d}m_1 / \int \zeta f_{\rm bin}\,\mathrm{d}m_1$.
+
+\subsection{Scenario 2: full population}
+\label{app:scenario2}
+
+Here we retain both singles and binaries and integrate down to the true IMF floor, $m_1 > m_2^{\rm min}$. Per drawn primary, the system is a single with probability $1 - f_{\rm bin}(m_1)$ (mass $m_1$, always kept) or a binary with probability $f_{\rm bin}(m_1)$ (mass $m_1 + m_2$, kept with probability $P_{\rm surv}$). Combining both channels, the expected retained star forming mass contribution per drawn primary is
+\begin{align}
+    M_{\rm SF} &= (1 - f_{\rm bin}) m_1
+  + f_{\rm bin}\left(\frac{3}{2}m_1 - m_2^{\rm min}
+       - \frac{(m_2^{\rm min})^2}{2 m_1}\right) \\
+  &= m_1 + f_{\rm bin}(m_1)
+     \left(\frac{1}{2}m_1 - m_2^{\rm min}
+           - \frac{(m_2^{\rm min})^2}{2 m_1}\right),
+  \label{eq:num2}
+\end{align}
+where the primary mass $m_1$ factors out because every system contributes its primary regardless of channel, leaving $f_{\rm bin}$ to weight only the \emph{net} extra mass from binarity, which is reduced by the low-$q$ rejection.
+
+The corresponding retention probability per drawn primary combines the two
+channels' valid probabilities,
+\begin{equation}
+    P_{\rm valid, full} = (1 - f_{\rm bin})\cdot 1 + f_{\rm bin} P_{\rm valid, bin}
+  = 1 - f_{\rm bin}(m_1)\,\frac{m_2^{\rm min}}{m_1},
+  \label{eq:den2}
+\end{equation}
+such a draw is rejected only if it is a binary \emph{and} fails the cut. Singles therefore drop out of the denominator correction entirely. Dividing the integral of~\eqref{eq:num2} by that of~\eqref{eq:den2} gives the mean total mass per surviving system,
+\begin{equation}
+  \langle M_{\rm full} \rangle
+  = \frac{\displaystyle\int_{m_2^{\rm min}}^{m_1^{\rm max}}
+      \zeta(m_1)\left[m_1 + f_{\rm bin}(m_1)
+      \left(\frac{1}{2}m_1 - m_2^{\rm min}
+            - \frac{(m_2^{\rm min})^2}{2 m_1}\right)\right]\mathrm{d}m_1}
+         {\displaystyle\int_{m_2^{\rm min}}^{m_1^{\rm max}}
+      \zeta(m_1)\left[1 - f_{\rm bin}(m_1)\,\frac{m_2^{\rm min}}{m_1}\right]
+      \mathrm{d}m_1}
+  \label{eq:scenario2}
+\end{equation}
+
+\subsection{Evaluation using our assumptions}
+
+For these simulations, we set $m_1^{\rm min} = 5 \msun$, $m_2^{\rm min} = 0.08 \msun$, and $m_1^{\rm max} = 150 \msun$. We assume an IMF for $\zeta(m)$ from \citet{Kroupa+2001:2001MNRAS.322..231K}, and a mass-dependent binary fraction following \citet{Offner+2023:2023ASPC..534..275O}. We numerically integrated Eqs.~\eqref{eq:scenario1} and~\eqref{eq:scenario2} to find $\avg{M_{\rm sample}} \approx \insertNumber \msun$ and $\avg{M_{\rm full}} \approx \insertNumber \msun$, giving $f_{\rm sample} \approx \insertNumber$.
+
+\end{document}
