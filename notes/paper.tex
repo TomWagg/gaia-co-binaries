@@ -162,11 +162,11 @@ For the Monte Carlo sample of BH-HMSs, we can use the outputs of \cosmic (\textt
 
 For the \stroop sample of BH-LMSs we need to consider the fact that we have not sampled the full initial distributions for our adaptive importance sampling. For this purpose we can define $f_{\rm sample}$, which is the fraction the full parameter space that we sampled, which can be simply defined as
 \begin{equation}\label{eq:f_sample}
-    f_{\rm sample} = \frac{\avg{M_{\rm sample}}}{\avg{M_{\rm full}}},
+    f_{\rm sample} = \frac{M_{\rm sample}}{M_{\rm full}}
 \end{equation}
-where $\avg{M_{\rm sample}}$ is the average mass of the binaries that we sampled, and $\avg{M_{\rm full}}$ is the average mass of the binaries that we would have sampled if we had drawn from the full initial distributions. We fully sampled orbital period, and eccentricity distributions. However, we didn't sample single stars, we only sampled binaries with primary masses above $m_{1, \rm min}$ (where $m_{1, \rm min} = 5 \msun$), and rejected systems with $m_2 < m_{2, \rm min}$ (where $m_{2, \rm min} = 0.08 \msun$). In Appendix~\ref{app:f_sample} we show how to analytically compute $f_{\rm sample}$, which is $\sim \insertNumber$ for our chosen parameters.
+where $M_{\rm sample}$ is the mean mass per binary that we sampled, and $M_{\rm full}$ is the mean mass of a full draw from our initial distributions. We fully sampled orbital period, and eccentricity distributions. However, we didn't sample single stars, we only sampled binaries with primary masses above $m_{1, \rm min}$ (where $m_{1, \rm min} = 5 \msun$), and rejected systems with $m_2 < m_{2, \rm min}$ (where $m_{2, \rm min} = 0.08 \msun$). In Appendix~\ref{app:f_sample} we show how to analytically compute $f_{\rm sample}$, which is $\sim 0.31$ for our chosen parameters.
 
-
+\tom{Complete the normalisation write up}
 
 \section{Variations}
 
@@ -187,27 +187,21 @@ We're going to vary the initial mass ratio distribution and the natal kick presc
 
 \appendix{}
 
-\section{Calculating the fraction of the initial distributions sampled in our simulations}
+\section{Calculating the fraction of mass that was sampled in our simulations}
 \label{app:f_sample}
 
-In this Section we derive the fraction of the initial distributions that were sampled in our \stroop simulations of \bhsb, $f_{\rm sample}$. As we note in Eq.~\ref{eq:f_sample}, this is the ratio of the average mass of the binaries that we sampled to the average mass of the binaries that we would have sampled if we had drawn from the full initial distributions.
+In this Section we derive the fraction of total mass of the initial distributions that were sampled in our \stroop simulations of \bhsb, $f_{\rm sample}$. As we note in Eq.~\ref{eq:f_sample}, this is the ratio of the average mass of the binaries that we sampled, $M_{\rm sample}$, to the average total mass for the full initial distributions, $M_{\rm full}$.
 
-We derive these average total masses using conditional probabilities. We assume primary masses are sampled from an initial mass function (IMF) $\zeta(m)$, in which a mass-dependent fraction $f_{\rm bin}(m_1)$ of primaries host a companion. Companions are assigned a uniform mass ratio $q \sim \mathcal{U}(0,1)$ with $m_2 = m_1 q$, and any binary with $m_2 < m_2^{\rm min}$ is rejected. We consider the two scenarios separately: (1) the sample population, and (2) the full population of singles and binaries.
+We derive these total masses using conditional probabilities. We assume primary masses are sampled from an initial mass function (IMF) $\zeta(m)$, in which a mass-dependent fraction $f_{\rm bin}(m_1)$ of primaries host a companion. Companions are assigned a uniform mass ratio $q \sim \mathcal{U}(0,1)$ with $m_2 = m_1 q$, and any binary with $m_2 < m_2^{\rm min}$ is rejected. We consider the two scenarios separately: (1) the sample population, and (2) the full population of singles and binaries.
 
-\subsection{Conditional expectation of the mass ratio}
-
-At fixed primary mass $m_1$, the rejection $m_2 = m_1 q > m_2^{\rm min}$ is equivalent to conditioning $q \sim \mathcal{U}(0,1)$ on $q > a$, where we define
+First, it is useful to note that at fixed primary mass $m_1$, the rejection $m_2 = m_1 q > m_2^{\rm min}$ is equivalent to conditioning $q \sim \mathcal{U}(0,1)$ on $q > a$, where we define $a \equiv m_2^{\rm min} / m_1$. A uniform distribution conditioned on $q > a$ is simply $\mathcal{U}(a,1)$, whose mean is
 \begin{equation}
-  a \equiv \frac{m_2^{\rm min}}{m_1}.
+  \mathbb{E}[q \mid m_1,\ \text{valid}] = \frac{1+a}{2}.
+  \label{eq:Eq} % hehe
 \end{equation}
-A uniform distribution conditioned on $q > a$ is simply $\mathcal{U}(a,1)$, whose mean is
+The probability that a binary with primary $m_1$ is then simply the width of the remaining uniform distribution, $1-a$, so the probability that a binary is \emph{valid} is
 \begin{equation}
-  \mathbb{E}[q \mid m_1,\ \text{surviving}] = \frac{1+a}{2}.
-  \label{eq:Eq}
-\end{equation}
-The probability that a binary with primary $m_1$ is deemed valid is the width of the surviving interval,
-\begin{equation}
-  P_{\rm valid, bin}(m_1) = 1 - a = 1 - \frac{m_2^{\rm min}}{m_1}.
+  P_{\rm valid, bin}(m_1) = 1 - \frac{m_2^{\rm min}}{m_1}.
   \label{eq:Psurv}
 \end{equation}
 Hence the expected total mass of a \emph{valid} binary at fixed $m_1$ is
@@ -220,35 +214,29 @@ Hence the expected total mass of a \emph{valid} binary at fixed $m_1$ is
 \subsection{Scenario 1: BH-star sample population}
 \label{app:scenario1}
 
-Here we retain only binaries and impose $m_1 > m_1^{\rm min}$. Because we draw $q$ once and discard failures, the `valid' sample is skew by the validity probability~\eqref{eq:Psurv}: a primary of mass $m_1$ enters the kept sample with weight $\zeta(m_1) f_{\rm bin}(m_1) P_{\rm valid, bin}(m_1)$.
-
-The average total mass per surviving binary is the conditional expectation
+Here we retain only binaries and impose $m_1 > m_1^{\rm min}$. Because we draw $q$ once and discard failures, the valid sample is skewed by the validity probability~\eqref{eq:Psurv}: a primary of mass $m_1$ enters the kept sample with weight $\zeta(m_1) f_{\rm bin}(m_1) P_{\rm valid, bin}(m_1)$. The average total mass per binary is given by
 \begin{equation}
-  \avg{M_{\rm sample}}
-  = \frac{\displaystyle\int \zeta f_{\rm bin}\, P_{\rm valid, bin}\,
-      \mathbb{E}[m_1+m_2\mid m_1]\,\mathrm{d}m_1}
-         {\displaystyle\int \zeta f_{\rm bin}\, P_{\rm valid, bin}\,\mathrm{d}m_1}.
+  M_{\rm sample}
+  = \displaystyle\int \zeta f_{\rm bin}\, P_{\rm valid, bin}\,
+      \mathbb{E}[m_1+m_2\mid m_1]\,\mathrm{d}m_1 .
 \end{equation}
 Substituting~\eqref{eq:Psurv} and~\eqref{eq:binmass}, we find
 \begin{equation}
-  \avg{M_{\rm sample}}
-  = \frac{\displaystyle\int_{m_1^{\rm min}}^{m_1^{\rm max}}
+  M_{\rm sample}
+  = \displaystyle\int_{m_1^{\rm min}}^{m_1^{\rm max}}
       \zeta(m_1)\,f_{\rm bin}(m_1)
       \left(\frac{3}{2}m_1 - m_2^{\rm min}
-            - \frac{(m_2^{\rm min})^2}{2 m_1}\right)\mathrm{d}m_1}
-         {\displaystyle\int_{m_1^{\rm min}}^{m_1^{\rm max}}
-      \zeta(m_1)\,f_{\rm bin}(m_1)
-      \left(1 - \frac{m_2^{\rm min}}{m_1}\right)\mathrm{d}m_1}
+            - \frac{(m_2^{\rm min})^2}{2 m_1}\right)\mathrm{d}m_1
   \label{eq:scenario1}
 \end{equation}
-The three terms in the numerator are immediately interpretable: $\tfrac{3}{2}m_1$ is the mean total mass for an unconstrained uniform-$q$ binary (since $\langle q \rangle = \tfrac12$), while the remaining terms subtract the contribution of the truncated low-$q$ tail. Note that a \emph{constant} $f_{\rm bin}$ cancels between numerator and denominator; the binary fraction survives in~\eqref{eq:scenario1} only because it is mass-dependent and thereby reshapes the primary-mass distribution of the binary subpopulation. Similarly, setting $m_2^{\rm min} \to 0$ recovers the unconstrained mean $\langle M_{\rm sample} \rangle = \int \zeta f_{\rm bin}\,(3/2)m_1\,\mathrm{d}m_1 / \int \zeta f_{\rm bin}\,\mathrm{d}m_1$.
+The terms in parentheses here are interpretable: $\tfrac{3}{2}m_1$ is the mean total mass for an unconstrained uniform-$q$ binary (since $\langle q \rangle = \tfrac12$), while the remaining terms subtract the contribution of the truncated low-$q$ tail. Note that a \emph{constant} $f_{\rm bin}$ cancels between numerator and denominator; the binary fraction survives in~\eqref{eq:scenario1} only because it is mass-dependent and thereby reshapes the primary-mass distribution of the binary subpopulation. Additionally setting $m_2^{\rm min} \to 0$ recovers $ M_{\rm sample} = \int \zeta(m) m (1 + 0.5)\,\mathrm{d}m$.
 
 \subsection{Scenario 2: full population}
 \label{app:scenario2}
 
-Here we retain both singles and binaries and integrate down to the true IMF floor, $m_1 > m_2^{\rm min}$. Per drawn primary, the system is a single with probability $1 - f_{\rm bin}(m_1)$ (mass $m_1$, always kept) or a binary with probability $f_{\rm bin}(m_1)$ (mass $m_1 + m_2$, kept with probability $P_{\rm surv}$). Combining both channels, the expected retained star forming mass contribution per drawn primary is
+Here we retain both singles and binaries and integrate down to the bottom of the IMF ($m_1 > m_1^{\rm min, IMF}$). Per drawn primary, the system is a single with probability $1 - f_{\rm bin}(m_1)$ (mass $m_1$, always kept) or a binary with probability $f_{\rm bin}(m_1)$ (mass $m_1 + m_2$, kept with probability $P_{\rm surv}$). Combining both channels, the expected retained star forming mass contribution per drawn primary is
 \begin{align}
-    M_{\rm SF} &= (1 - f_{\rm bin}) m_1
+    \mathbb{E}[m_1 + m_2] &= (1 - f_{\rm bin}) m_1
   + f_{\rm bin}\left(\frac{3}{2}m_1 - m_2^{\rm min}
        - \frac{(m_2^{\rm min})^2}{2 m_1}\right) \\
   &= m_1 + f_{\rm bin}(m_1)
@@ -258,28 +246,25 @@ Here we retain both singles and binaries and integrate down to the true IMF floo
 \end{align}
 where the primary mass $m_1$ factors out because every system contributes its primary regardless of channel, leaving $f_{\rm bin}$ to weight only the \emph{net} extra mass from binarity, which is reduced by the low-$q$ rejection.
 
-The corresponding retention probability per drawn primary combines the two
-channels' valid probabilities,
+The mean total mass per drawn primary is then simply the integral of~\eqref{eq:num2} over the IMF.
 \begin{equation}
-    P_{\rm valid, full} = (1 - f_{\rm bin})\cdot 1 + f_{\rm bin} P_{\rm valid, bin}
-  = 1 - f_{\rm bin}(m_1)\,\frac{m_2^{\rm min}}{m_1},
-  \label{eq:den2}
-\end{equation}
-such a draw is rejected only if it is a binary \emph{and} fails the cut. Singles therefore drop out of the denominator correction entirely. Dividing the integral of~\eqref{eq:num2} by that of~\eqref{eq:den2} gives the mean total mass per surviving system,
-\begin{equation}
-  \langle M_{\rm full} \rangle
-  = \frac{\displaystyle\int_{m_2^{\rm min}}^{m_1^{\rm max}}
-      \zeta(m_1)\left[m_1 + f_{\rm bin}(m_1)
-      \left(\frac{1}{2}m_1 - m_2^{\rm min}
-            - \frac{(m_2^{\rm min})^2}{2 m_1}\right)\right]\mathrm{d}m_1}
-         {\displaystyle\int_{m_2^{\rm min}}^{m_1^{\rm max}}
-      \zeta(m_1)\left[1 - f_{\rm bin}(m_1)\,\frac{m_2^{\rm min}}{m_1}\right]
-      \mathrm{d}m_1}
-  \label{eq:scenario2}
+    M_{\rm full}
+    = \displaystyle\int_{m_1^{\rm min, IMF}}^{m_1^{\rm max}}
+        \zeta(m_1)\left[m_1 + f_{\rm bin}(m_1)
+        \left(\frac{1}{2}m_1 - m_2^{\rm min}
+                - \frac{(m_2^{\rm min})^2}{2 m_1}\right)\right]\mathrm{d}m_1
+    \label{eq:scenario2}
 \end{equation}
 
+Similar to above, this simplifies significantly for a constant binary fraction and $m_2^{\rm min} \to 0$, yielding
+\begin{equation}
+  M_{\rm full, simple}
+  = \displaystyle\int_{m_1^{\rm min, IMF}}^{m_1^{\rm max}}
+      \zeta(m_1)\left[m_1 (1 + f_{\rm bin} / 2) \right]\mathrm{d}m_1
+  \label{eq:scenario2_simple}
+\end{equation}
 \subsection{Evaluation using our assumptions}
 
-For these simulations, we set $m_1^{\rm min} = 5 \msun$, $m_2^{\rm min} = 0.08 \msun$, and $m_1^{\rm max} = 150 \msun$. We assume an IMF for $\zeta(m)$ from \citet{Kroupa+2001:2001MNRAS.322..231K}, and a mass-dependent binary fraction following \citet{Offner+2023:2023ASPC..534..275O}. We numerically integrated Eqs.~\eqref{eq:scenario1} and~\eqref{eq:scenario2} to find $\avg{M_{\rm sample}} \approx \insertNumber \msun$ and $\avg{M_{\rm full}} \approx \insertNumber \msun$, giving $f_{\rm sample} \approx \insertNumber$.
+For these simulations, we set $m_1^{\rm min} = 5 \msun$, $m_2^{\rm min} = 0.08 \msun$, and $m_1^{\rm max} = 150 \msun$. We assume an IMF for $\zeta(m)$ from \citet{Kroupa+2001:2001MNRAS.322..231K}, and a mass-dependent binary fraction following \citet{Offner+2023:2023ASPC..534..275O}. We numerically integrated Eqs.~\eqref{eq:scenario1} and~\eqref{eq:scenario2} to find $M_{\rm sample} \approx 0.23 \msun$ and $M_{\rm full} \approx 0.76 \msun$, giving $f_{\rm sample} \approx 0.31$.
 
 \end{document}
