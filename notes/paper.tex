@@ -89,38 +89,32 @@
 
 \section{Simulating the Gaia detectable population of BH-star binaries}
 
-Overall, to make a prediction for the detectable population of \bhsb, we aim to simulate the intrinsic population, with their present day properties:
+\everyone{This is a very rough draft of the methods, I would love some opinions on it and perhaps someone also willing to check my normalisation maths :)}
+
+In order to make a prediction for the detectable population of \bhsb, we aim to simulate the intrinsic population, with their present day properties:
 
 \begin{equation}
     \theta = \{ m_{\rm BH}, m_{\rm comp}, M_{G, {\rm comp}}, e, P, \vec{x}, \vec{v} \},
 \end{equation}
-where $m_{\rm BH}$ is the mass of the black hole, $m_{\rm comp}$ is the mass of the companion star, $M_{G, {\rm comp}}$ is the Gaia G-band absolute magnitude of the companion star, $e$ is the orbital eccentricity, $P$ is the orbital period, and $\vec{x}$ and $\vec{v}$ are the position and velocity of the binary in the Milky Way. We will separately sample random orientations and inclinations.
-
-As we describe below, we use \cosmic to generate the intrinsic properties of the binaries, and \cogsworth to compute their Gaia G-band magnitudes, positions, and velocities.
+where $m_{\rm BH}$ is the mass of the black hole, $m_{\rm comp}$ is the mass of the companion star, $M_{G, {\rm comp}}$ is the Gaia G-band absolute magnitude of the companion star, $e$ is the orbital eccentricity, $P$ is the orbital period, and $\vec{x}$ and $\vec{v}$ are the position and velocity of the binary in the Milky Way. We use \cosmic to generate the intrinsic properties of the binaries, and \cogsworth to compute their Gaia G-band magnitudes, positions, and velocities, as we describe below.
 
 \subsection{Creating a sample of BH-stars from which to draw}
 
-\bhsb are intrinsically rare in the Milky Way. We expect that there are around 170,000 present in the Milky Way. Given that there's around $\num{6e10}$ of stellar mass in the Milky Way, that implies a flat Monte Carlo sample would require one to evolve about 300,000 stellar masses of binaries to get each individual \bhs. It's worth considering the reasons for the rarity of \bhsb, because it informs how we should sample them.
+\bhsb are intrinsically rare in the Milky Way. We expect that there are around 170,000 present in the Milky Way. Given that there's around $\num{6e10} \msun$ of stellar mass in the Milky Way, that implies a flat Monte Carlo sample would require one to evolve about 300,000 stellar masses of binaries to get each individual \bhs. It is therefore important design a more targeted sampling strategy. It's worth considering the reasons for the rarity of \bhsb, because it informs how we should sample them.
 
 \bhsb with low-mass stars (BH-LMS) are rare because they actually \textit{form rarely}. They require extreme mass ratios (for example, a $30 \msun$ BH progenitor with a $1 \msun$ companion), which are rare when assuming a flat prior on mass ratio. These binaries still often fail to produce bound \bhs systems. A tight initial binary will undergo mass transfer when the primary star fills its Roche lobe, which is almost inevitably unstable given the mass ratio of the system. These common-envelope events often fail and merge due to a failed common-envelope. Alternatively, if the binary is wide enough to avoid mass transfer, any supernova kick imparted by the BH is often enough to unbind the system.
 
 \bhsb with high-mass stars (BH-HMS), on the other hand, are rare because they \textit{die quickly}. Although it is common for a high-mass binary to have a stage in which it is a bound BH and a massive star, this is short lived because of the rapid evolution of the stellar companion. As a result, these systems must form recently in the history of the Galaxy in order to be observed today.
 
-Given the different reasoning for their rarity, we apply two different sampling strategies. For the BH-HMSs, creating an intrinsic population can be achieved through simple Monte Carlo draws from the initial distributions.For BH-LMSs, a more complex approach is required. We employ the \stroop adaptive importance sampling algorithm \citep{STROOPWAFEL} to sample only systems that are likely to form our targets. We note that separating these populations is essential, otherwise the adaptive sampling produces negligible gains and just finds BH-HMSs.
+Given the different reasoning for their rarity, we apply two different sampling strategies. For the BH-HMSs, creating an intrinsic population can be achieved through simple Monte Carlo draws from the initial distributions. For BH-LMSs, a more complex approach is required. We employ the \stroop adaptive importance sampling algorithm \citep{STROOPWAFEL} to sample only systems that are likely to form our targets. We note that separating these populations is essential, otherwise the adaptive sampling would produce negligible gains and would be dominated by the more common BH-HMSs.
 
 We apply the subsequent analysis to each of these populations separately, and then combine the results at the end, normalising for their relative rates.
 
 \question{Is this there a more clever way to combine these consistently?}
 
-For the \stroop sampling we assume the following priors for the initial distributions of the binaries:
-\begin{itemize}
-    \item Primary mass, $m_1$, drawn from a Kroupa IMF \citep{Kroupa+2001:2001MNRAS.322..231K} between $5 \msun$ and $150 \msun$
-    \item Mass ratio, $q = m_2 / m_1$, drawn from a flat distribution between $0$ and $1$ \citep{Mazeh+1992:1992ApJ...401..265M}
-    \item Orbital period, $P$, drawn from a power-law distribution with $p(P) \propto (\log_{10}(P / \rm days))^{-0.55} \in [0.15, 5.5]$ \citep{Sana+2012:2012Sci...337..444S}
-    \item Eccentricity, $e$, drawn from a power-law distribution with $p(e) \propto e^{-0.45} \in [0, 0.9]$ \citep{Sana+2012:2012Sci...337..444S}
-\end{itemize}
+For the \stroop sampling we assume the following priors for the initial distributions of the binaries. The primary mass, $m_1$, is drawn from a Kroupa IMF \citep{Kroupa+2001:2001MNRAS.322..231K} between $5 \msun$ and $150 \msun$. The mass ratio, $q = m_2 / m_1$, is drawn from a flat distribution between $0$ and $1$ \citep{Mazeh+1992:1992ApJ...401..265M}. The orbital period, $P$, drawn from a power-law distribution with $p(P) \propto (\log_{10}(P / \rm days))^{-0.55} \in [0.15, 5.5]$ \citep{Sana+2012:2012Sci...337..444S}. The eccentricity, $e$, is drawn from a power-law distribution with $p(e) \propto e^{-0.45} \in [0, 0.9]$ \citep{Sana+2012:2012Sci...337..444S}.
 
-We use these priors to sample populations of BH-LMSs for each metallicity bin that we have a \texttt{MESA} grid for. We then evolve these binaries with \cosmicm. This gives us the formation properties of the binaries in a given metallicity bin
+We use these priors to sample populations of BH-LMSs for each metallicity bin for which we have a \texttt{MESA} grid. We then evolve these binaries with \cosmicm. This gives us the formation properties of the binaries in a given metallicity bin
 
 \begin{equation}
     \theta_{b, Z} = \{ m_{\rm BH}, P_{i}, m_{{\rm comp}, i}, e_i, t_{\rm start}, t_{\rm end} \},
@@ -129,7 +123,7 @@ where $P_i$, $m_{{\rm comp}, i}$, and $e_i$ are the initial orbital period, comp
 
 \subsection{Populating the Milky Way}
 
-We next populate a Milky Way our synthetic \bhss, since the synthetic binaries are uniformly sampled across metallicity bins, which is not representative of the Milky Way. We use the \citet{Sanders+2015:2015MNRAS.449.3479S} model for the Milky Way, which includes distributions for the lookback time, positions, velocities. We combine this model with \citet{Frankel+2018}, which provides a relation between birth time, position, and metallicity. These models account for radial migration and the inside-out growth of the galaxy, whilst maintaining a steady-state distribution of Galactic orbits. With these models, we draw $N_g = \insertNumber$\footnote{Large number here. This will need to be chosen to get a representative sample, depends on detectability I suppose.} individual points from the galaxy to get
+We next populate a Milky Way our synthetic \bhss. This additional level of sampling is necessary since the synthetic binaries are uniformly sampled across metallicity bins, which is not representative of the Milky Way. We use the \citet{Sanders+2015:2015MNRAS.449.3479S} model for the Milky Way, which includes distributions for the lookback time, positions, velocities. We combine this model with \citet{Frankel+2018}, which provides a relation between birth time, position, and metallicity. These models account for radial migration and the inside-out growth of the galaxy, whilst maintaining a steady-state distribution of Galactic orbits. With these models, we draw $N_g = \insertNumber$\footnote{Large number here. This will need to be chosen to get a representative sample, depends on detectability I suppose.} individual points from the galaxy to get
 
 \begin{equation}
     \theta_{g} = \{ \tau, \vec{x}_i, \vec{v}_i, Z_g \},
@@ -154,23 +148,41 @@ With this information, we can integrate the Galactic orbits of the binaries to g
 
 Using these parameters, we apply \texttt{GaiaMock} \citep{El-Badry+2024:2024OJAp....7E.100E} to get a representative sample of the detectable \gaia population.
 
+\aditya{We should eventually add more details on exactly what GaiaMock does. Also potentially use Adrian's tool instead.}
+
 \subsection{Normalising to the Milky Way rate}
 
 Finally, we must normalise our sample to the Milky Way. We have a sample of $N_g$ binaries drawn from the Milky Way, but this is not representative of the actual number of \bhss in the Milky Way. Given how many intrinsic systems we would create per star forming mass, we can scale by the stellar mass of the Milky Way. This additionally allows us to consistently combine the BH-HMS and BH-LMS populations, which are sampled differently.
 
-For the Monte Carlo sample of BH-HMSs, we can use the outputs of \cosmic (\texttt{mass\_singles} and \texttt{mass\_binaries}) to get the total mass of stars that we would need to evolve to get our sample of BH-HMSs. 
-
-For the \stroop sample of BH-LMSs we need to consider the fact that we have not sampled the full initial distributions for our adaptive importance sampling. For this purpose we can define $f_{\rm sample}$, which is the fraction the full parameter space that we sampled, which can be simply defined as
-\begin{equation}\label{eq:f_sample}
-    f_{\rm sample} = \frac{M_{\rm sample}}{M_{\rm full}}
+Specifically, the number of detectable systems, $N_{\rm det}$, can be written as
+\begin{equation}
+    N_{\rm det} = \frac{M_{\rm SF, MW}}{N_g} \sum_{i=1}^{N_g} \eta(Z_i) \cdot \phi_i,
 \end{equation}
-where $M_{\rm sample}$ is the mean mass per binary that we sampled, and $M_{\rm full}$ is the mean mass of a full draw from our initial distributions. We fully sampled orbital period, and eccentricity distributions. However, we didn't sample single stars, we only sampled binaries with primary masses above $m_{1, \rm min}$ (where $m_{1, \rm min} = 5 \msun$), and rejected systems with $m_2 < m_{2, \rm min}$ (where $m_{2, \rm min} = 0.08 \msun$). In Appendix~\ref{app:f_sample} we show how to analytically compute $f_{\rm sample}$, which is $\sim 0.31$ for our chosen parameters.
+where $M_{\rm SF, MW} \approx 10^{11}\msun$ is the total star forming mass budget of the Milky Way \citep[see Appendix B2 of][]{Wagg+2022}\footnote{Note that this greater than the present day Milky Way stellar mass, because this accounts for the fact that stars have lost mass to stellar winds and supernovae by present day.}, $\eta(Z_i)$ is the formation efficiency of the target population (either BH-LMSs or BH-HMSs) at the metallicity of the $i$th binary, and $\phi_i$ is a heaviside function that is $1$ if the binary is detectable by \gaia and $0$ otherwise (this also accounts for systems that are not in their BH-star phase at present day). The formation efficiency is defined as the number of target binaries formed per unit star forming mass:
+\begin{equation}
+    \eta(Z) = \frac{1}{f_{\rm sample}} \frac{\sum_i^N w_i \cdot \epsilon_i}{\sum_i^N w_i (m_{1, i} + m_{2, i})},
+\end{equation}
 
-\tom{Complete the normalisation write up}
+%For the Monte Carlo sample of BH-HMSs, we can use the outputs of \cosmic (\texttt{mass\_singles} and \texttt{mass\_binaries}) to compute $f_{\rm sample}$.
+
+where $\epsilon_i$ is a heaviside function that is $1$ if the $i$th binary is a target binary and $0$ otherwise, $w_i$ is the adaptive importance sampling weight of the $i$th binary. We also account for the fact that we have not sampled the full initial distributions in our sampling. Therefore, we define $f_{\rm sample}$, which is the fraction the full parameter space that we sampled, as
+\begin{equation}\label{eq:f_sample}
+    f_{\rm sample} = \frac{M_{\rm sample}}{M_{\rm full}},
+\end{equation}
+where $M_{\rm sample}$ is the mean mass per binary that we sampled, and $M_{\rm full}$ is the mean mass of a full draw from our initial distributions. We fully sampled orbital period, and eccentricity distributions. However, we didn't sample single stars, we only sampled binaries with primary masses above $m_{1, \rm min}$ (where $m_{1, \rm min} = 5 \msun$), and rejected systems with $m_2 < m_{2, \rm min}$ (where $m_{2, \rm min} = 0.08 \msun$). In Appendix~\ref{app:f_sample} we show how to analytically compute this value and that $f_{\rm sample} \sim 0.31$ for our chosen parameters.
+
+We use this method to calculate $N_{\rm det}$ for both the BH-HMS and BH-LMS populations, and then combine them to get the total number of detectable \bhss in the Milky Way. These totals also allow us to combine the two populations consistently, by scaling the BH-HMS and BH-LMS populations by their relative rates.
 
 \section{Variations}
 
-We're going to vary the initial mass ratio distribution and the natal kick prescription for black holes. Also potentially some of the remnant mass prescriptions (MM20).
+The plan for variations is currently all permutations of the following parameters:
+\begin{itemize}
+    \item Initial mass ratio distribution: flat, $p(q) \propto q^{-1}$
+    \item Natal kicks: fallback-modulated, no kicks, no fallback-modulation
+    \item Remnant mass prescriptions: \citet{Fryer+2012:2012ApJ...749...91F} delayed, \citet{Mandel+2020:2020MNRAS.499.3214M}
+\end{itemize}
+
+\tom{Note to self: the different mass ratio distribution variation has a different $f_{\rm sample}$, so we need to recalculate that for the normalisation.}
 
 \begin{acknowledgements}
     
@@ -264,6 +276,24 @@ Similar to above, this simplifies significantly for a constant binary fraction a
   \label{eq:scenario2_simple}
 \end{equation}
 \subsection{Evaluation using our assumptions}
+
+We retrieve an expression for $f_{\rm sample}$ by combining Eqs.~\eqref{eq:scenario1} and~\eqref{eq:scenario2}. The integrals can be evaluated numerically for any choice of IMF $\zeta(m)$, binary fraction $f_{\rm bin}(m)$, and mass limits.
+
+\begin{equation}
+    f_{\rm sample} = \frac{\displaystyle\int_{m_1^{\rm min}}^{m_1^{\rm max}}
+      \zeta(m_1)\,f_{\rm bin}(m_1)
+      \left(\frac{3}{2}m_1 - m_2^{\rm min}
+            - \frac{(m_2^{\rm min})^2}{2 m_1}\right)\mathrm{d}m_1}{\displaystyle\int_{m_1^{\rm min, IMF}}^{m_1^{\rm max}}
+        \zeta(m_1)\left[m_1 + f_{\rm bin}(m_1)
+        \left(\frac{1}{2}m_1 - m_2^{\rm min}
+                - \frac{(m_2^{\rm min})^2}{2 m_1}\right)\right]\mathrm{d}m_1}
+\end{equation}
+
+A more general expression for any general mass ratio distribution $p(q)$ is:
+
+\begin{equation}
+    f_{\rm sample, general} = \frac{\displaystyle\int_{m_1^{\rm min}}^{m_1^{\rm max}} \zeta(m_1)\,f_{\rm bin}(m_1) m_1 \int_{m_2^{\rm min}/m_1}^{1} (1 + q) p(q) \dd{q} \dd{m_1}}{\displaystyle\int_{m_1^{\rm min, IMF}}^{m_1^{\rm max}} \int_{m_2^{\rm min}/m_1}^{1} \qty[ f_{\rm bin}(m_1) \cdot m_1 (1 + q) + (1 - f_{\rm bin}(m_1)) m_1 ]  \zeta(m_1) p(q) \dd{q} \dd{m_1}}
+\end{equation}
 
 For these simulations, we set $m_1^{\rm min} = 5 \msun$, $m_2^{\rm min} = 0.08 \msun$, and $m_1^{\rm max} = 150 \msun$. We assume an IMF for $\zeta(m)$ from \citet{Kroupa+2001:2001MNRAS.322..231K}, and a mass-dependent binary fraction following \citet{Offner+2023:2023ASPC..534..275O}. We numerically integrated Eqs.~\eqref{eq:scenario1} and~\eqref{eq:scenario2} to find $M_{\rm sample} \approx 0.23 \msun$ and $M_{\rm full} \approx 0.76 \msun$, giving $f_{\rm sample} \approx 0.31$.
 
