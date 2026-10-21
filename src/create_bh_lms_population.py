@@ -1,8 +1,11 @@
 import argparse
 from cosmic.sample.stroopwafel import AdaptiveSampler, ParameterSpace, Parameter
+from cosmic.sample.stroopwafel.rejection import default_reject
 from cosmic.utils import parse_inifile
+from functools import partial
 from time import time
 import numpy as np
+import os
 
 
 def is_bh_lms(bpp):
@@ -53,7 +56,7 @@ def create_bh_lms_population(
         SSEDict=SSEDict,
         is_interesting=is_bh_lms,
         derive_params=derive_params,
-        reject_systems="default",
+        reject_systems=partial(default_reject, SSEDict=SSEDict, min_secondary_mass=0.1),
         nproc=nproc,
         n_generations=1,
         seed=117,
@@ -76,6 +79,8 @@ def main():
     parser.add_argument("--nproc", type=int, required=True, help="Number of processes to use for parallelization.")
     parser.add_argument("--output_path", type=str, required=True, help="Path to save the generated population data.")
     args = parser.parse_args()
+
+    os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
 
     create_bh_lms_population(
         metallicity=args.metallicity,
