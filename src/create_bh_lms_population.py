@@ -7,6 +7,10 @@ from time import time
 import numpy as np
 import os
 
+import sys
+sys.path.append("../helpers")
+import const
+
 
 def is_bh_lms(bpp):
     bh_star_mask = (
@@ -27,8 +31,19 @@ def is_bh_lms(bpp):
 
 
 def create_bh_lms_population(
-        metallicity, inifile_path, total_systems, batch_size, nproc, output_path
+        metallicity_ind, metallicity_grid, inifile_path, total_systems, batch_size, nproc, output_path
     ):
+
+    metallicity = const.METISSE_Z_GRID[metallicity_ind] if metallicity_grid == "metisse" else const.SSE_Z_GRID[metallicity_ind]
+
+    start_message = "Starting BHLMS population generation with these parameters:"
+    start_message += f"\nMetallicity: {metallicity:.2e} (from {metallicity_grid} grid, index {metallicity_ind})"
+    start_message += f"\nINI file: {inifile_path}"
+    start_message += f"\nTotal systems: {total_systems}"
+    start_message += f"\nBatch size: {batch_size}"
+    start_message += f"\nNumber of processes: {nproc}"
+    start_message += f"\nOutput path: {output_path}"
+    print(start_message)
 
     start = time()
 
@@ -72,7 +87,8 @@ def create_bh_lms_population(
 
 def main():
     parser = argparse.ArgumentParser(description="Create a population of DCOs using adaptive sampling.")
-    parser.add_argument("--metallicity", type=float, required=True, help="Metallicity of the population.")
+    parser.add_argument("--metallicity-ind", type=int, required=True, help="Index of the metallicity in the grid to use.")
+    parser.add_argument("--metallicity-grid", type=str, choices=["metisse", "sse"], required=True, help="Which metallicity grid to use: 'metisse' or 'sse'.")
     parser.add_argument("--inifile", type=str, required=True, help="Path to the ini file with simulation parameters.")
     parser.add_argument("--total_systems", type=int, required=True, help="Total number of systems to generate.")
     parser.add_argument("--batch_size", type=int, required=True, help="Number of systems to generate per batch.")
@@ -83,7 +99,8 @@ def main():
     os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
 
     create_bh_lms_population(
-        metallicity=args.metallicity,
+        metallicity_ind=args.metallicity_ind,
+        metallicity_grid=args.metallicity_grid,
         inifile_path=args.inifile,
         total_systems=args.total_systems,
         batch_size=args.batch_size,
