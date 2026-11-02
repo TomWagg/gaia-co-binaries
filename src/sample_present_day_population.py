@@ -209,7 +209,7 @@ def main():
     args = parser.parse_args()
 
     args.folder = os.path.join("/mnt/ceph/users/twagg/gaia-bhs", args.variation)
-    args.output_folder = os.path.join(args.folder, "detection_files")
+    args.output_folder = os.path.join(args.folder, "present_day_files")
 
     os.makedirs(args.output_folder, exist_ok=True)
 
