@@ -45,11 +45,11 @@ def postprocess(folder):
 
             # otherwise record the formation rows and their metallicities
             bh_star_rows = bpp[bh_star_mask]
-            formation_rows = bh_star_rows.drop_duplicates(subset="bin_num")[["tphys", "mass_1", "mass_2", "kstar_1", "kstar_2", "sep", "ecc", "bin_num", "rad_1", "rad_2", "lum_1", "lum_2", "teff_1", "teff_2"]]
+            formation_rows = bh_star_rows.drop_duplicates(subset="bin_num", keep="first")[["tphys", "mass_1", "mass_2", "kstar_1", "kstar_2", "sep", "ecc", "bin_num", "rad_1", "rad_2", "lum_1", "lum_2", "teff_1", "teff_2"]]
             formation_rows["metallicity"] = initC["metallicity"].iloc[0]
 
             # also work out the duration they'll spend in this phase
-            final_bh_star_time = bh_star_rows.drop_duplicates(subset="bin_num")["tphys"]
+            final_bh_star_time = bh_star_rows.drop_duplicates(subset="bin_num", keep="last")["tphys"]
             formation_rows["t_end"] = final_bh_star_time.values
             formation_rows.rename(columns={"tphys": "t_start"}, inplace=True)
 
