@@ -53,3 +53,40 @@ def calculate_f_sample(
 
     f_sample = mass_sample / mass_full
     return f_sample, mass_sample, mass_full
+
+
+def metallicity_weights(Z_grid, Z_samples, clip_edges=True):
+    """Weight each grid metallicity by the fraction of samples in its log-space bin
+
+    Parameters
+    ----------
+    Z_grid : `numpy.ndarray`
+        sorted grid of metallicities
+    Z_samples : `numpy.ndarray`
+        samples from the Milky Way metallicity distribution
+    clip_edges : `bool`
+        if True, samples outside the grid are assigned to the end bins,
+        otherwise they are dropped
+
+    Returns
+    -------
+    weights : `numpy.ndarray`
+        weight for each grid point (sums to 1 if clip_edges is True)
+    """
+    log_grid = np.log10(Z_grid)
+    log_samples = np.log10(Z_samples)
+
+    # bin edges at the log-space midpoints (i.e. geometric means)
+    inner_edges = 0.5 * (log_grid[1:] + log_grid[:-1])
+
+    if clip_edges:
+        edges = np.concatenate([[-np.inf], inner_edges, [np.inf]])
+    else:
+        # outer edges mirror the first/last half-widths
+        lo = log_grid[0] - (inner_edges[0] - log_grid[0])
+        hi = log_grid[-1] + (log_grid[-1] - inner_edges[-1])
+        edges = np.concatenate([[lo], inner_edges, [hi]])
+
+    counts, _ = np.histogram(log_samples, bins=edges)
+    weights = counts / len(Z_samples)
+    return weights / np.sum(weights)
