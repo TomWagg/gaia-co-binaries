@@ -7,7 +7,7 @@ from time import time
 import argparse
 
 
-def postprocess(folder):
+def postprocess(folder, co_type):
     input_folder = os.path.join(folder, "stroopwafel_files")
 
     start_time = time()
@@ -15,7 +15,7 @@ def postprocess(folder):
 
     files = []
     for file in os.listdir(input_folder):
-        if file.startswith(f"BH_LMS_Z_"):
+        if file.startswith(f"{co_type}_LMS_Z_"):
             files.append(file)
 
     formation_rows_list = []
@@ -34,7 +34,8 @@ def postprocess(folder):
         lap = time()
 
         # find the BH-star formation rows
-        bh_star_mask = (((bpp["kstar_1"] == 14) & (bpp["kstar_2"] < 10)) | ((bpp["kstar_1"] < 10) & (bpp["kstar_2"] == 14))) & (bpp["sep"] > 0)
+        kstar = 14 if co_type == "BH" else 13
+        bh_star_mask = (((bpp["kstar_1"] == kstar) & (bpp["kstar_2"] < 10)) | ((bpp["kstar_1"] < 10) & (bpp["kstar_2"] == kstar))) & (bpp["sep"] > 0)
 
         # if there are none then skip
         if bh_star_mask.sum() == 0:
@@ -73,23 +74,23 @@ def postprocess(folder):
 
     kick_infos = [pd.read_hdf(f"{input_folder}/{file}", key="kick_info")[
         ["tphys", "star", "delta_vsysx_1", "delta_vsysy_1", "delta_vsysz_1", "bin_num"]
-    ] for file in os.listdir(input_folder) if file.startswith(f"BH_LMS_Z_")]
+    ] for file in os.listdir(input_folder) if file.startswith(f"{co_type}_LMS_Z_")]
     all_kick_infos = pd.concat(kick_infos, ignore_index=True)
     all_kick_infos.index = all_kick_infos.index.values // 2
-    all_kick_infos.to_hdf(f"{folder}/BH_LMS.h5", key="kick_info")
+    all_kick_infos.to_hdf(f"{folder}/{co_type}_LMS.h5", key="kick_info")
 
-    print(f"Finished processing BH_LMS in {time() - start_time:.2f}s")
+    print(f"Finished processing {co_type}_LMS in {time() - start_time:.2f}s")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Postprocess DCOS")
     parser.add_argument("-f", "--folder", type=str, required=True, help="Folder containing the STROOPWAFEL files")
+    parser.add_argument("-c", "--co", type=str, choices=["BH", "NS"], required=True, help="Which compact object to process: 'BH' or 'NS'.")
     args = parser.parse_args()
 
-    postprocess(args.folder)
-
+    postprocess(args.folder, args.co)
 
 if __name__ == "__main__":
     main()
 
-# python postprocess.py -f /mnt/ceph/users/twagg/gaia-bhs/fiducial
+# python postprocess.py -f /mnt/ceph/users/twagg/gaia-bhs/metisse -c BH

@@ -9,7 +9,7 @@ SUBMITTER_TEMPLATE = r"""#!/bin/bash
 #SBATCH --partition=cca
 #SBATCH --ntasks=10
 #SBATCH --cpus-per-task=32
-#SBATCH --constraint=genoa|icelake
+#SBATCH --constraint=genoa
 #SBATCH --time=00:45:00
 #SBATCH -o /mnt/home/twagg/projects/gaia-bhs/slurm/present_day_runs/logs/bhlms_VARIATION_disBatch_%A.out
 #SBATCH -e /mnt/home/twagg/projects/gaia-bhs/slurm/present_day_runs/logs/bhlms_VARIATION_disBatch_%A.err

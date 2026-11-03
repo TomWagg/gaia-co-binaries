@@ -12,9 +12,9 @@ sys.path.append("../helpers")
 import const
 
 
-def is_bh_lms(bpp):
+def is_co_lms(bpp, kstar):
     bh_star_mask = (
-        ((bpp.kstar_1 == 14) & (bpp.kstar_2 < 10)) | ((bpp.kstar_1 < 10) & (bpp.kstar_2 == 14))
+        ((bpp.kstar_1 == kstar) & (bpp.kstar_2 < 10)) | ((bpp.kstar_1 < 10) & (bpp.kstar_2 == kstar))
     ) & (bpp.sep > 0)
 
     bh_star_rows = bpp.loc[bh_star_mask]
@@ -30,13 +30,20 @@ def is_bh_lms(bpp):
     return len(long_enough_bin_nums), long_enough_bin_nums
 
 
-def create_bh_lms_population(
-        metallicity_ind, metallicity_grid, inifile_path, total_systems, batch_size, nproc, output_path
+def is_bh_lms(bpp):
+    return is_co_lms(bpp, 14)
+
+def is_ns_lms(bpp):
+    return is_co_lms(bpp, 13)
+
+
+def create_co_lms_population(
+        co, metallicity_ind, metallicity_grid, inifile_path, total_systems, batch_size, nproc, output_path
     ):
 
     metallicity = const.METISSE_Z_GRID[metallicity_ind] if metallicity_grid == "metisse" else const.SSE_Z_GRID[metallicity_ind]
 
-    start_message = "Starting BHLMS population generation with these parameters:"
+    start_message = f"Starting {co}LMS population generation with these parameters:"
     start_message += f"\nMetallicity: {metallicity:.2e} (from {metallicity_grid} grid, index {metallicity_ind})"
     start_message += f"\nINI file: {inifile_path}"
     start_message += f"\nTotal systems: {total_systems}"
@@ -52,7 +59,7 @@ def create_bh_lms_population(
         return {'mass_2': sampled['mass_1'] * sampled['q'], "metallicity": metallicity}
 
     param_list = [
-        Parameter('mass_1', 10.0, 150.0, dist='kroupa'),
+        Parameter('mass_1', 6 if co.lower() == "ns" else 10.0, 150.0, dist='kroupa'),
         Parameter('q', 0.0, 1.0, dist='uniform'),
         Parameter('porb', 10**(0.15), 10**(5.5),  dist='sana'),
         Parameter('ecc', 1e-9, 0.9999, dist='sana_ecc'),
@@ -69,7 +76,7 @@ def create_bh_lms_population(
         batch_size=batch_size,
         BSEDict=BSEDict,
         SSEDict=SSEDict,
-        is_interesting=is_bh_lms,
+        is_interesting=is_bh_lms if co.lower() == "bh" else is_ns_lms,
         derive_params=derive_params,
         reject_systems=partial(default_reject, SSEDict=SSEDict, min_secondary_mass=0.1),
         nproc=nproc,
@@ -87,6 +94,7 @@ def create_bh_lms_population(
 
 def main():
     parser = argparse.ArgumentParser(description="Create a population of DCOs using adaptive sampling.")
+    parser.add_argument("--co", type=str, choices=["BH", "NS"], required=True, help="Which compact object to generate: 'bh' or 'ns'.")
     parser.add_argument("--metallicity-ind", type=int, required=True, help="Index of the metallicity in the grid to use.")
     parser.add_argument("--metallicity-grid", type=str, choices=["metisse", "sse"], required=True, help="Which metallicity grid to use: 'metisse' or 'sse'.")
     parser.add_argument("--inifile", type=str, required=True, help="Path to the ini file with simulation parameters.")
@@ -98,7 +106,8 @@ def main():
 
     os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
 
-    create_bh_lms_population(
+    create_co_lms_population(
+        co=args.co,
         metallicity_ind=args.metallicity_ind,
         metallicity_grid=args.metallicity_grid,
         inifile_path=args.inifile,
