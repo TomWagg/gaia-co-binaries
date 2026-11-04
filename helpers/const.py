@@ -30,6 +30,15 @@ VARIATIONS = {
     "alpha_10": {
         "label": r"$\alpha_{\rm CE} = 10$"
     },
+    "new_winds": {
+        "label": r"New winds"
+    },
+    "new_cbm": {
+        "label": r"New CBM"
+    },
+    "new_winds_and_cbm": {
+        "label": r"New winds + New CBM"
+    }
 }
 for v in VARIATIONS:
     if "v" == "sse":
