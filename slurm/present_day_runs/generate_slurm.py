@@ -41,3 +41,6 @@ for variation in const.VARIATIONS:
         task = TASK_TEMPLATE.replace("VARIATION", variation).replace("CO", co_type)
         with open(os.path.join(job_dir, f"Tasks_{co_type}"), "w") as f:
             f.write(task)
+        
+        with open(os.path.join(job_dir, f"Tasks_{co_type}_justone"), "w") as f:
+            f.write(task.replace("REPEAT 10 start 0", "REPEAT 1 start 0"))
