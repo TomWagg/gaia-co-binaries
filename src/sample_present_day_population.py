@@ -219,7 +219,7 @@ def main():
     parser.add_argument("-s", "--suffix", type=str, default="", help="Suffix to add to the output files.")
     parser.add_argument("-v", "--variation", type=str, default="metisse", help="Variation of the model to use (default: fiducial).")
     parser.add_argument('-c', '--cores', type=int, default=2, help='Number of cores to use for parallel processing (default: 2).')
-    parser.add_argument('-t', '--co-type', type=str, options=["BH", "NS"], default="BH", help='Type of compact object to consider (default: BH).')
+    parser.add_argument('-t', '--co-type', type=str, choices=["BH", "NS"], required=True, help="Type of compact object to evolve: 'BH' or 'NS'.")
 
     args = parser.parse_args()
 

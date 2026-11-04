@@ -67,10 +67,10 @@ def postprocess(folder, co_type):
         print(f"  [{time() - file_start_time:.2f}s] Finishing processing {file}")
 
     all_initC = pd.concat(initC_list, ignore_index=True)
-    save_initC(f"{folder}/BH_LMS.h5", all_initC)
+    save_initC(f"{folder}/{co_type}_LMS.h5", all_initC)
 
     all_formation_rows = pd.concat(formation_rows_list, ignore_index=True)
-    all_formation_rows.to_hdf(f"{folder}/BH_LMS.h5", key="formation_rows")
+    all_formation_rows.to_hdf(f"{folder}/{co_type}_LMS.h5", key="formation_rows")
 
     kick_infos = [pd.read_hdf(f"{input_folder}/{file}", key="kick_info")[
         ["tphys", "star", "delta_vsysx_1", "delta_vsysy_1", "delta_vsysz_1", "bin_num"]
