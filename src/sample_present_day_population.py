@@ -22,8 +22,8 @@ from cosmic.output import load_initC
 BPP_COLUMNS = [
     'tphys', 'mass_1', 'mass_2', 'kstar_1', 'kstar_2',
     'sep', 'porb', 'ecc', 'evol_type', 'RRLO_1', 'RRLO_2', 
-    'rad_2', 'lum_2', 'teff_2', "SN_1",
-    'radc_1', 'radc_2', 'menv_1', 'menv_2', 'renv_1', 'renv_2',
+    'rad_1', 'rad_2', 'lum_2', 'teff_2', "SN_1",
+    'menv_1', 'menv_2', 'renv_1', 'renv_2',
     'omega_spin_1', 'omega_spin_2', 'B_1', 'B_2', 'bacc_1', 'bacc_2',
     'tacc_1', 'tacc_2',
 ]

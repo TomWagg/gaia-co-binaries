@@ -16,7 +16,7 @@ VARIATIONS = {
         "label": "SSE"
     },
     "metisse": {
-        "label": "Fiducial"
+        "label": "Standard METISSE"
     },
     "acc_lim_0": {
         "label": r"$\beta = 0$"
@@ -38,6 +38,21 @@ VARIATIONS = {
     },
     "new_winds_and_cbm": {
         "label": r"New winds + New CBM"
+    },
+    "olejak_20": {
+        "label": r"$q_{\rm MT} \ge 20$ stable, non-conservative MT"
+    },
+    "olejak_40": {
+        "label": r"$q_{\rm MT} \ge 40$ stable, non-conservative MT"
+    },
+    "olejak_20_new_winds": {
+        "label": r"New winds + $q_{\rm MT} \ge 20$ stable, non-conservative MT"
+    },
+    "olejak_20_new_cbm": {
+        "label": r"New CBM + $q_{\rm MT} \ge 20$ stable, non-conservative MT"
+    },
+    "olejak_20_new_winds_and_cbm": {
+        "label": r"New winds + New CBM + $q_{\rm MT} \ge 20$ stable, non-conservative MT"
     }
 }
 for v in VARIATIONS:
