@@ -13,50 +13,92 @@ SSE_Z_EDGES = np.concatenate([[0], 0.5 * (SSE_Z_GRID[1:] + SSE_Z_GRID[:-1]), [np
 
 VARIATIONS = {
     "sse": {
-        "label": "SSE"
+        "label": "SSE",
+        "colour": "#333333"
     },
     "metisse": {
-        "label": "Standard METISSE"
+        "label": "Standard METISSE",
+        "colour": (0.165, 0.559, 0.920)
     },
-    "acc_lim_0": {
-        "label": r"$\beta = 0$"
-    },
-    "gamma_m3": {
-        "label": r"$\gamma = \gamma_{\rm disk}$"
-    },
-    "acc_lim_0_gamma_m3": {
-        "label": r"$\beta = 0, \gamma = \gamma_{\rm disk}$"
-    },
-    "alpha_10": {
-        "label": r"$\alpha_{\rm CE} = 10$"
-    },
+    # "acc_lim_0": {
+    #     "label": r"$\beta = 0$"
+    # },
+    # "gamma_m3": {
+    #     "label": r"$\gamma = \gamma_{\rm disk}$"
+    # },
+    # "acc_lim_0_gamma_m3": {
+    #     "label": r"$\beta = 0, \gamma = \gamma_{\rm disk}$"
+    # },
+    # "alpha_10": {
+    #     "label": r"$\alpha_{\rm CE} = 10$",
+    #     "colour": "pink"
+    # },
     "new_winds": {
-        "label": r"New winds"
+        "label": r"New winds",
+        "colour": (0.963, 0.261, 0.135)
     },
     "new_cbm": {
-        "label": r"New CBM"
+        "label": r"New CBM",
+        "colour": (0.203, 0.805, 0.711)
     },
     "new_winds_and_cbm": {
-        "label": r"New winds + New CBM"
+        "label": r"New winds + New CBM",
+        "colour": (0.563, 0.124, 0.873)
     },
     "olejak_20": {
-        "label": r"$q_{\rm MT} \ge 20$ stable, non-conservative MT"
+        "label": r"$q_{\rm min, SMT} = 20$",
+        "colour": (0.165, 0.559, 0.920),
+        "linestyle": "--"
     },
     "olejak_40": {
-        "label": r"$q_{\rm MT} \ge 40$ stable, non-conservative MT"
+        "label": r"$q_{\rm min, SMT} = 40$",
+        "colour": "grey",
+        "linestyle": "--"
     },
     "olejak_20_new_winds": {
-        "label": r"New winds + $q_{\rm MT} \ge 20$ stable, non-conservative MT"
+        "label": r"New winds + $q_{\rm min, SMT} = 20$",
+        "colour": (0.963, 0.261, 0.135),
+        "linestyle": "--"
     },
     "olejak_20_new_cbm": {
-        "label": r"New CBM + $q_{\rm MT} \ge 20$ stable, non-conservative MT"
+        "label": r"New CBM + $q_{\rm min, SMT} = 20$",
+        "colour": (0.203, 0.805, 0.711),
+        "linestyle": "--"
     },
     "olejak_20_new_winds_and_cbm": {
-        "label": r"New winds + New CBM + $q_{\rm MT} \ge 20$ stable, non-conservative MT"
-    }
+        "label": "New winds + New CBM " + r"+ $q_{\rm min, SMT} = 20$",
+        "colour": (0.563, 0.124, 0.873),
+        "linestyle": "--"
+    },
+    "new_winds_and_cbm_kicks": {
+        "label": "New winds + New CBM + Kicks",
+        "colour": (0.563, 0.124, 0.873),
+        "linestyle": "--"
+    },
+    "olejak_20_new_winds_and_cbm_kicks": {
+        "label": r"New winds + New CBM + Kicks + $q_{\rm min, SMT} = 20$",
+        "colour": (0.563, 0.124, 0.873),
+        "linestyle": "--"
+    },
+    "new_winds_and_cbm_raghavan10": {
+        "label": r"New winds + New CBM + Raghavan+10 $P_{\rm orb}$ distribution",
+        "colour": (0.563, 0.124, 0.873),
+        "linestyle": "--",
+        "porb_model": "raghavan10",
+        "ecc_model": "uniform",
+        "settings": "new_winds_and_cbm"
+    },
+    "olejak_20_new_winds_and_cbm_raghavan10": {
+        "label": r"New winds + New CBM + Kicks + $q_{\rm min, SMT} = 20$ + Raghavan+10 $P_{\rm orb}$ distribution",
+        "colour": (0.563, 0.124, 0.873),
+        "linestyle": "--",
+        "porb_model": "raghavan10",
+        "ecc_model": "uniform",
+        "settings": "olejak_20_new_winds_and_cbm"
+    },
 }
 for v in VARIATIONS:
-    if "v" == "sse":
+    if v == "sse":
         VARIATIONS[v]["Z_edges"] = SSE_Z_EDGES
         VARIATIONS[v]["Z_grid"] = SSE_Z_GRID
     else:
@@ -78,7 +120,9 @@ KNOWN_BHS = {
             "mass_error": 0.1,
             "period": 185.387,
             "zmax": 0.262,
-            "zmax_error": 0.003
+            "zmax_error": 0.003,
+            "companion_mass": 0.93,
+            "companion_mass_error": 0.05
         },
         {
             "name": "Gaia BH2",
@@ -86,7 +130,9 @@ KNOWN_BHS = {
             "mass_error": 0.34,
             "period": 1276.7,
             "zmax": 0.089,
-            "zmax_error": 0.003
+            "zmax_error": 0.003,
+            "companion_mass": 1.17,
+            "companion_mass_error": 0.08
         },
         {
             "name": "Gaia BH3",
@@ -95,7 +141,9 @@ KNOWN_BHS = {
             "period": 11.57 * 365.25,
             "period_error": 0.25 * 365.25,
             "zmax": 6.785,
-            "zmax_error": 0.415
+            "zmax_error": 0.415,
+            "companion_mass": 0.76,
+            "companion_mass_error": 0.05
         }
     ]
 }
