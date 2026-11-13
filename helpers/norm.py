@@ -43,10 +43,10 @@ def calculate_f_sample(
         f_bin = lambda m: f_bin_val
     
     def mass_sample_integrand(m):
-        return IMF(m) * f_bin(m) * (1.5 * m - m2_min - m2_min ** 2 / (2.0 * m))
+        return IMF(m) * f_bin(m) * (1.5 * m - m2_min - m2_min**2 / (2.0 * m))
     
     def mass_full_integrand(m):
-        return IMF(m) * (m + f_bin(m) * (0.5 * m - m2_min - m2_min ** 2 / (2.0 * m)))
+        return IMF(m) * (m + f_bin(m) * (0.5 * m - m2_min**2 / (2.0 * m)))
     
     mass_sample, _ = quad(mass_sample_integrand, m1_min, m1_max)
     mass_full, _ = quad(mass_full_integrand, m1_min_imf, m1_max)
