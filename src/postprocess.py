@@ -6,6 +6,8 @@ import numpy as np
 from time import time
 import argparse
 
+KICK_COLS = ["tphys", "star", "natal_kick", "delta_vsysx_1", "delta_vsysy_1", "delta_vsysz_1", "bin_num"]
+
 
 def postprocess(folder, co_type):
     input_folder = os.path.join(folder, "stroopwafel_files")
@@ -20,6 +22,7 @@ def postprocess(folder, co_type):
 
     formation_rows_list = []
     initC_list = []
+    kick_info_list = []
 
     files = np.sort(files)
     for file in files:
@@ -64,6 +67,9 @@ def postprocess(folder, co_type):
 
             formation_rows_list.append(formation_rows)
 
+        kick_info = pd.read_hdf(f"{input_folder}/{file}", key="kick_info")[KICK_COLS]
+        kick_info_list.append(kick_info)
+
         print(f"  [{time() - file_start_time:.2f}s] Finishing processing {file}")
 
     all_initC = pd.concat(initC_list, ignore_index=True)
@@ -72,10 +78,7 @@ def postprocess(folder, co_type):
     all_formation_rows = pd.concat(formation_rows_list, ignore_index=True)
     all_formation_rows.to_hdf(f"{folder}/{co_type}_LMS.h5", key="formation_rows")
 
-    kick_infos = [pd.read_hdf(f"{input_folder}/{file}", key="kick_info")[
-        ["tphys", "star", "delta_vsysx_1", "delta_vsysy_1", "delta_vsysz_1", "bin_num"]
-    ] for file in os.listdir(input_folder) if file.startswith(f"{co_type}_LMS_Z_")]
-    all_kick_infos = pd.concat(kick_infos, ignore_index=True)
+    all_kick_infos = pd.concat(kick_info_list, ignore_index=True)
     all_kick_infos.index = all_kick_infos.index.values // 2
     all_kick_infos.to_hdf(f"{folder}/{co_type}_LMS.h5", key="kick_info")
 
