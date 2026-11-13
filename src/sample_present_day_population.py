@@ -11,7 +11,7 @@ import sys
 sys.path.append("/mnt/home/twagg/projects/gaia-bhs/helpers/")
 import const
 from sfh import SB15_PhiCut
-import norm
+import norm, reweight
 
 import gala.potential as gp
 import cogsworth
@@ -22,7 +22,7 @@ from cosmic.output import load_initC
 BPP_COLUMNS = [
     'tphys', 'mass_1', 'mass_2', 'kstar_1', 'kstar_2',
     'sep', 'porb', 'ecc', 'evol_type', 'RRLO_1', 'RRLO_2', 
-    'rad_1', 'rad_2', 'lum_2', 'teff_2', "SN_1",
+    'rad_1', 'rad_2', 'lum_1', 'lum_2', 'teff_1', 'teff_2', "SN_1",
     'menv_1', 'menv_2', 'renv_1', 'renv_2',
     'omega_spin_1', 'omega_spin_2', 'B_1', 'B_2', 'bacc_1', 'bacc_2',
     'tacc_1', 'tacc_2',
@@ -34,24 +34,40 @@ def evolve_milky_way_instance(
         all_formation_rows, all_kick_infos, all_initCs,
         Z_edges, Z_centres,
         n_per_instance=500_000, oversample_factor=5,
-        variation="fiducial", cores=2
+        variation="fiducial", cores=2, astrometry_seed=42
     ):
     lap = time.time()
 
     # draw a random sample, weighted by the Milky Way metallicity distribution
     rand_sample = all_formation_rows.sample(n_per_instance, weights="MW_Z_weight", replace=True)
+    # sort the sample by metallicity so that we can evolve each metallicity bin separately in order
+    rand_sample = rand_sample.sort_values("metallicity", kind="stable")
     rand_kicks = all_kick_infos.loc[rand_sample.index]
     rand_initC = all_initCs.loc[rand_sample.index]
 
+    if "smt_q" not in rand_initC.columns:
+        rand_initC["smt_q"] = -1
+
     print(f"  [{time.time() - lap:03.1f}s] Sampled {n_per_instance} systems from the formation rows")
     lap = time.time()
+
+    w = rand_sample["weights"].values
+    log_p = np.log10(rand_initC["porb"].values)
+    e = rand_initC["ecc"].values
+    log_uniform_weights = reweight.reweight_to_loguniform(w=w, log_p=log_p)
+    thermal_weights = reweight.reweight_to_thermal(w=w, e=e)
+    log_uniform_and_thermal_weights = reweight.reweight_to_thermal(w=log_uniform_weights, e=e)
+
+    print(f"Total weights: {w.sum():.3e}, log-uniform weights: {log_uniform_weights.sum() / w.sum():.2f}, thermal weights: {thermal_weights.sum() / w.sum():.2f}, log-uniform + thermal weights: {log_uniform_and_thermal_weights.sum() / w.sum():.2f}")
 
     # work out the target number of systems in each metallicity bin, for galaxy sampling
     target_counts, _ = np.histogram(rand_sample["metallicity"].values, bins=Z_edges)
     sample_size = target_counts.sum() * oversample_factor
 
     # loop variables
-    counts, rnd, sfhs = np.zeros_like(target_counts), 0, []
+    counts, rnd = np.zeros_like(target_counts), 0
+    # one list per metallicity bin, so galaxy points can be concatenated in bin order
+    sfhs = [[] for _ in range(len(target_counts))]
 
     print(f"  [{time.time() - lap:03.1f}s] Starting to sample from the SFH to get {target_counts.sum()} systems in the right metallicity bins...")
     lap = time.time()
@@ -73,8 +89,6 @@ def evolve_milky_way_instance(
             SB15 = SB15_PhiCut(phi_cut=0.0, potential=gp.MilkyWayPotential(version="v2"))
         # sample from the SFH, clipping metallicities to the range of the COSMIC sim
         SB15.sample(int(sample_size))
-        SB15.Z[SB15.Z < 1e-4] = 1e-4
-        SB15.Z[SB15.Z > 0.03] = 0.03
 
         # go through each metallicity bin and add systems to the SFH until we have enough
         for i in range(len(target_counts)):
@@ -88,7 +102,7 @@ def evolve_milky_way_instance(
                 # if we have more matches than we need, randomly select a subset of the matches to add
                 matches[np.random.choice(np.where(matches)[0], matches.sum() - (target_counts[i] - counts[i]), replace=False)] = False
 
-            sfhs.append(SB15[matches])
+            sfhs[i].append(SB15[matches])
             counts[i] = min(target_counts[i], counts[i] + matches.sum())
 
         print(f"    After iteration {rnd + 1}, we have {np.sum(counts)} systems in the right metallicity bins.")
@@ -97,12 +111,14 @@ def evolve_milky_way_instance(
     print(f"  [{time.time() - lap:03.1f}s] Finished sampling from SFH after {rnd} iterations. Sampled {np.sum(counts)} systems.")
     lap = time.time()
 
+    settings = const.VARIATIONS[variation]['settings'] if settings in const.VARIATIONS[variation] else variation
+
     # start a new population with the random sample
     p = cogsworth.pop.Population(
         len(rand_sample),
         # unused but required for cogsworth
         sfh_model=cogsworth.sfh.SandersBinney2015(potential=gp.MilkyWayPotential(version='v2')),
-        ini_file=f"/mnt/home/twagg/projects/gaia-bhs/settings/{variation}.ini",
+        ini_file=f"/mnt/home/twagg/projects/gaia-bhs/settings/{settings}.ini",
         galactic_potential=gp.MilkyWayPotential(version='v2'),
         processes=cores, store_entire_orbits=False,
         # make retries more often, but not quite so large a decrease in timestep
@@ -114,8 +130,10 @@ def evolve_milky_way_instance(
         error_file_path=None
     )
 
+    # flatten bin by bin: every chunk for bin 0 (from all rounds), then bin 1, ...
+    sfhs_ordered = [chunk for bin_chunks in sfhs for chunk in bin_chunks]
     # stick together all of the samples galaxy SFHs
-    p._initial_galaxy = cogsworth.sfh.concat(*sfhs)
+    p._initial_galaxy = cogsworth.sfh.concat(*sfhs_ordered)
 
     # reset the bin_nums for the random sample and kick info
     rand_sample.index = np.arange(len(rand_sample))
@@ -180,20 +198,29 @@ def evolve_milky_way_instance(
 
     # sort by bin_num to match the order of p_co_star.bpp
     re_ev_bpp.sort_values(by=["bin_num", "tphys"], inplace=True)
-
-    # copy over the cols COSMIC didn't produce
-    # extra_cols = ["weights", "t_start", "t_end", "bin_num"]
-    # for col in extra_cols:
-    #     re_ev_bpp[col] = p_co_star.bpp[col].values
-    # p_co_star._bpp = re_ev_bpp[p_co_star.bpp.columns]
+    re_ev_bpp.index = re_ev_bpp["bin_num"].values
     p_co_star._bpp = re_ev_bpp
+
+    if (p_co_star.final_bpp["porb"] > 0.0).any():
+        p_co_star = p_co_star[p_co_star.final_bpp["porb"] > 0.0]
 
     print(f"  [{time.time() - re_ev_start:03.1f}s] Evolved the {len(p_co_star)} systems to their current orbital parameters with COSMIC.")
     lap = time.time()
 
-    # step 3: evolve the loud systems through the Milky Way and calculate their SNRs at true distances
+    # step 3: evolve the loud systems through the Milky Way
     p_co_star.perform_galactic_evolution(progress_bar=False)
     print(f"  [{time.time() - lap:03.1f}s] Finished integrating the Galactic orbits of those systems through the Milky Way")
+    lap = time.time()
+
+    # step 4: get the observables for all bh/ns-star bad boys, and hack the teff and lum of the CO
+    p_co_star.get_observables(filters=["Gaia_G_EDR3"], assume_mw_galactocentric=True, ignore_extinction=False)
+    print(f"  [{time.time() - lap:03.1f}s] Calculated the observables for those systems")
+    lap = time.time()
+
+    # step 5: run Gaiamock to get the Gaia-observable systems
+    dr3_astrometry = p_co_star.get_gaia_astrometry(data_release='dr3', G_range=(13, 17), seed=astrometry_seed)
+    dr4_astrometry = p_co_star.get_gaia_astrometry(data_release='dr4', G_range=(13, 17), seed=astrometry_seed)
+    print(f"  [{time.time() - lap:03.1f}s] Worked out which systems are observable by Gaia with gaiamock")
     lap = time.time()
 
     # et voila, a detectable fraction for this Milky Way instance
@@ -201,7 +228,7 @@ def evolve_milky_way_instance(
 
     total_weights_all = p.bpp["weights"].values.sum()
 
-    return p_co_star, total_weights_all
+    return p_co_star, total_weights_all, dr3_astrometry, dr4_astrometry
 
 
 def _add_dummy_stats(p):
@@ -227,6 +254,10 @@ def main():
     args.output_folder = os.path.join(args.folder, "present_day_files")
 
     os.makedirs(args.output_folder, exist_ok=True)
+
+    n_formed = pd.read_hdf(f"/mnt/home/twagg/ceph/gaia-bhs/n_intrinsic.h5", key="n_intrinsic")
+    n_formed.set_index("variation", inplace=True)
+    n_formed_bh = n_formed.loc[args.variation, "n_intrinsic_BH"]
 
     full_start = time.time()
     all_formation_rows = pd.read_hdf(os.path.join(args.folder, f"{args.co_type}_LMS.h5"), key="formation_rows")
@@ -257,24 +288,43 @@ def main():
 
     p_mws = []
     total_weight_list = []
+    dr3_astrometry_list = []
+    dr4_astrometry_list = []
+    max_bin_num = 0
     for inst in range(args.n_instances):
         print(f"Running Milky Way instance {inst + 1}/{args.n_instances}...")
         start = time.time()
-        p_mw, weights_all = evolve_milky_way_instance(
+        p_mw, weights_all, dr3_astrometry, dr4_astrometry = evolve_milky_way_instance(
             all_formation_rows, all_kick_infos, all_initCs,
             n_per_instance=args.n_per_instance,
-            oversample_factor=1.75,
+            oversample_factor=2,
             variation=args.variation,
             cores=args.cores,
             Z_edges=const.SSE_Z_EDGES if args.variation == "sse" else const.METISSE_Z_EDGES,
-            Z_centres=Z_centres
+            Z_centres=Z_centres,
+            astrometry_seed=int(args.suffix) * 42 + inst if args.suffix.isdigit() else 42 + inst
         )
         if p_mw is not None:
             p_mw.bpp["MW_instance"] = inst
             p_mws.append(p_mw)
-        total_weight_list.append(weights_all)
+
+        dr3_bin_nums = dr3_astrometry[dr3_astrometry["published_dr3"]].index.values
+        dr4_bin_nums = dr4_astrometry[dr4_astrometry["published_dr4_loose"]].index.values
 
         print(f"  Instance {inst + 1} finished in {time.time() - start:.2f} seconds.")
+        f_detect_dr3 = np.sum(p_mw.initC["weights"][np.isin(p_mw.bin_nums, dr3_bin_nums)]) / weights_all
+        f_detect_dr4 = np.sum(p_mw.initC["weights"][np.isin(p_mw.bin_nums, dr4_bin_nums)]) / weights_all
+        print(f"  Expected detection fraction for DR3: {np.sum(p_mw.initC["weights"][np.isin(p_mw.bin_nums, dr3_bin_nums)]) / weights_all:.3e}, meaning {f_detect_dr3 * n_formed_bh:.1f} expected detections.")
+        print(f"  Expected detection fraction for DR4: {np.sum(p_mw.initC["weights"][np.isin(p_mw.bin_nums, dr4_bin_nums)]) / weights_all:.3e}, meaning {f_detect_dr4 * n_formed_bh:.1f} expected detections.")
+
+        for astrometry in [dr3_astrometry, dr4_astrometry]:
+            astrometry["MW_instance"] = inst
+            astrometry["bin_num"] = astrometry.index.values + max_bin_num
+            astrometry.index = astrometry["bin_num"].values
+        total_weight_list.append(weights_all)
+        max_bin_num += p_mw.bin_nums.max() + 1
+        dr3_astrometry_list.append(dr3_astrometry)
+        dr4_astrometry_list.append(dr4_astrometry)
 
     p_mw_all = cogsworth.pop.concat(*p_mws)
 
@@ -286,6 +336,11 @@ def main():
     p_mw_all.save(os.path.join(args.output_folder, f"{args.co_type}_LMS_present_day_{args.suffix}.h5"), overwrite=True)
     with h5.File(os.path.join(args.output_folder, f"{args.co_type}_LMS_present_day_{args.suffix}.h5"), "a") as f:
         f.attrs["total_weight_all"] = np.sum(total_weight_list)
+
+    dr3_astrometry_all = pd.concat(dr3_astrometry_list)
+    dr4_astrometry_all = pd.concat(dr4_astrometry_list)
+    dr3_astrometry_all.to_hdf(os.path.join(args.output_folder, f"{args.co_type}_LMS_present_day_{args.suffix}.h5"), key="dr3_astrometry")
+    dr4_astrometry_all.to_hdf(os.path.join(args.output_folder, f"{args.co_type}_LMS_present_day_{args.suffix}.h5"), key="dr4_astrometry")
 
     print(f"Saved population to {args.output_folder}.")
     print(f"Total time for {args.n_instances} instances: {time.time() - full_start:.2f} seconds.\n\n\n")
