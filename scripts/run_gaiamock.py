@@ -39,6 +39,8 @@ def load_population(path, *, dust=True) -> pd.DataFrame:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         p = cogsworth.pop.load(str(path))
+        p.final_bpp["teff_1"] = 1e-10
+        p.final_bpp["lum_1"] = 1e-10
         try:
             obs = p.observables
         except ValueError:  # none saved with the file
@@ -49,11 +51,13 @@ def load_population(path, *, dust=True) -> pd.DataFrame:
         else:
             print("using the observables saved in the population file")
     fr = p.final_bpp.reset_index(drop=True)
+    fr["weights"] = p.initC["weights"].values
     fr["g_cogsworth"], fr["mg_cogsworth"] = obs[f"{G_BAND}_app_1"].values, obs[f"{G_BAND}_abs_1"].values
     fr[["x", "y", "z"]] = p.final_pos.to_value("kpc")
     fr[["vx", "vy", "vz"]] = p.final_vel.to_value("km/s")
     k1, k2 = fr["kstar_1"], fr["kstar_2"]
     keep = (((k1 == BH) & (k2 < 10)) | ((k2 == BH) & (k1 < 10))) & (fr["sep"] > 0)
+
     return fr[keep].reset_index(drop=True)
 
 
@@ -240,3 +244,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# python run_gaiamock.py ~/ceph/gaia-bhs/metisse/present_day_files/BH_LMS_present_day_0.h5 --dr dr4 --out gaiamock_metisse.parquet
