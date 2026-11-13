@@ -17,7 +17,7 @@ import binfrac
 import gala.potential as gp
 import cogsworth
 
-def instrinic_counts(output_folder, f_sample_kwargs={}, m1_min_NS=5.0):
+def instrinic_counts(output_folder, f_sample_kwargs={}, m1_min_NS=6.0):
     """Calculate the intrinsic counts of BH-LMS systems for each metallicity
 
     Parameters
@@ -49,9 +49,11 @@ def instrinic_counts(output_folder, f_sample_kwargs={}, m1_min_NS=5.0):
     n_intrinsics = {"BH": [], "NS": []}
 
     for variation in const.VARIATIONS:
-        # if variation not in ["sse", "metisse"]:
-        #     n_intrinsics.append(np.nan)
-        #     continue
+        # if "raghavan" not in variation:
+        # if variation not in ["olejak_20_new_winds_and_cbm", "olejak_20_new_winds_and_cbm_kicks"]:
+            # n_intrinsics["BH"].append(np.nan)
+            # n_intrinsics["NS"].append(np.nan)
+            continue
         print(variation)
         grid = "sse" if variation == "sse" else "metisse"
         grid_vals = const.SSE_Z_GRID if variation == "sse" else const.METISSE_Z_GRID
@@ -111,7 +113,7 @@ if __name__ == "__main__":
                         help="Path to the folder containing the output files from create_bh_lms_population.py")
     parser.add_argument("--m1_min", type=float, default=10.0,
                         help="Minimum mass of the primary star (in solar masses)")
-    parser.add_argument("--m1_min_NS", type=float, default=5.0,
+    parser.add_argument("--m1_min_NS", type=float, default=6.0,
                         help="Minimum mass of the primary star in NS systems (in solar masses)")
     parser.add_argument("--m1_max", type=float, default=150.0,
                         help="Maximum mass of the primary star (in solar masses)")
